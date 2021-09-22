@@ -1,10 +1,10 @@
 package com.springsecurity.security;
 
 import com.springsecurity.auth.ApplicationUserService;
+import com.springsecurity.jwt.JwtConfig;
 import com.springsecurity.jwt.JwtTokenVerifier;
 import com.springsecurity.jwt.JwtUsernameAndPasswordAuthenticateFilter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -17,6 +17,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 
+import javax.crypto.SecretKey;
+
 import static com.springsecurity.security.ApplicationUserRole.*;
 
 @Configuration
@@ -27,6 +29,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final PasswordEncoder passwordEncoder;
     private final ApplicationUserService applicationUserService;
+    private final SecretKey secretKey;
+    private final JwtConfig jwtConfig;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -36,8 +40,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) // jwt는 stateless
                 .and()
-                .addFilter(new JwtUsernameAndPasswordAuthenticateFilter(authenticationManager())) //jwt filter에 authenticationmanager 주입
-                .addFilterAfter(new JwtTokenVerifier(), JwtUsernameAndPasswordAuthenticateFilter.class)
+                .addFilter(new JwtUsernameAndPasswordAuthenticateFilter(authenticationManager(), jwtConfig, secretKey)) //jwt filter에 authenticationmanager 주입
+                .addFilterAfter(new JwtTokenVerifier(secretKey, jwtConfig), JwtUsernameAndPasswordAuthenticateFilter.class)
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
